@@ -1,0 +1,77 @@
+---
+# tasks file for master_node
+- name: "Creating Repo for Kubernetes"
+  copy:
+          src: /etc/yum.repos.d/kubernetes.repo
+          dest: /etc/yum.repos.d/kubernetes.repo
+
+- name: "Installing Docker & iproute-tc Software"
+  package:
+          name: "{{ item }}"
+          state: present
+  loop: "{{ package_name }}"
+
+- name: "Installing K8s related Softwares"
+  shell: yum install {{ item }} -y  --disableexcludes=kubernetes
+  loop: "{{ k8s_package_name }}"
+
+ 
+- name: "Starting Services"
+  service:
+          name: "{{ item }}"
+          state: started
+  loop: "{{ service_name }}"
+
+- name: "Changing driver to systemd"
+  blockinfile:
+          path: /etc/docker/daemon.json
+          block: |
+                  {
+                    "exec-opts": ["native.cgroupdriver=systemd"]
+                  }
+
+- name: "Restart Docker Service"
+  service:
+          name: docker
+          state: restarted
+
+- name: "Setting bridge nf-call-iptables value to 1"
+  shell: |
+           cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+           net.bridge.bridge-nf-call-ip6tables = 1
+           net.bridge.bridge-nf-call-iptables = 1
+           EOF
+
+- name: "Restart Bridge Setting"
+  shell: sysctl --system
+
+- name: "Pulling Images"
+  shell: kubeadm config images pull
+
+- name: "Initialising Master Node"
+  shell: kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem
+  ignore_errors: yes
+
+- name: "Creating .kube directory"
+  file:
+          name: $HOME/.kube
+          state: directory
+
+- name: "Copying admin.conf file"
+  shell: cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+
+- name: "Changing Owner Permission"
+  shell: chown $(id-u):$(id-g) $HOME/.kube/config
+
+- name: "Installing Flannel"
+  shell:  kubectl apply  -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+- name: "Creating Token"
+  shell: kubeadm token create --print-join-command
+  register: token
+
+- name: "Printing Token"
+  debug:
+          var: token.stdout
+
+

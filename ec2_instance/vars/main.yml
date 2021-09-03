@@ -1,0 +1,16 @@
+---
+# vars file for ec2_instance
+node:
+        - "mn"
+        - "wn1"
+        - "wn2"
+key: "amazon_service"
+instance_type: "t2.micro"
+AZ: "ap-south-1"
+image_name: "ami-0a9d27a9f4f5c0efc"
+total_count: 1
+subnet_id: "subnet-c6767fae"
+security_group: "sg-ad7eadca"
+pause_time_min: 0
+access_key: "aws_access_key"
+secret_key: "aws_secret_key"

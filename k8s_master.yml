@@ -1,0 +1,4 @@
+- hosts: master
+  roles:
+      - name: "K8S Master"
+        role: master_node

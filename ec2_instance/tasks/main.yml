@@ -1,0 +1,52 @@
+---
+# tasks file for ec2_instance
+- name: "Provisioning EC2 Instance"
+  ec2_instance:
+                    region: "{{ AZ }}"
+                    image_id: "{{ image_name }}"
+                    instance_type: "{{ instance_type }}"
+                    vpc_subnet_id: "{{ subnet_id }}"
+                    security_group: "{{ security_group }}"
+                    name: "{{ item }}"
+                    key_name: "{{ key }}"
+                    aws_access_key: "{{ access_key }}"
+                    aws_secret_key: "{{ secret_key }}"
+                    network:
+                            assign_public_ip: yes
+  loop: "{{ node }}"
+  register: X
+
+- debug:
+                    msg: "{{ X.results[0]['instances'][0]['network_interfaces'][0]['association'].public_ip }}"
+  register: X1
+
+- name: "Wait for 1 min"
+  pause:
+                    minutes: "{{ pause_time_min }}"
+
+
+- debug:
+                    msg: "{{ X.results[1]['instances'][0]['network_interfaces'][0]['association'].public_ip }}"
+  register: X2
+
+- name: "Wait for 1  min"
+  pause:
+                    minutes: "{{ pause_time_min }}"
+
+
+- debug:
+                    msg: "{{ X.results[2]['instances'][0]['network_interfaces'][0]['association'].public_ip }}"
+  register: X3
+
+- name: Writing IPs to inventory
+  blockinfile:
+     path: /etc/ansible/hosts
+     block: |
+            [master]
+            {{ X1.msg }} ansible_user=ec2-user 
+            [workers]
+            {{ X2.msg }} ansible_user=ec2-user
+            {{ X3.msg }} ansible_user=ec2-user
+
+
+

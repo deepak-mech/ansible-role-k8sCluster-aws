@@ -1,0 +1,14 @@
+---
+# vars file for master_node
+package_name:
+        - "docker"
+        - "iproute-tc"
+
+k8s_package_name:
+        - "kubelet"
+        - "kubeadm"
+        - "kubectl"
+
+service_name:
+        - "docker"
+        - "kubelet"
